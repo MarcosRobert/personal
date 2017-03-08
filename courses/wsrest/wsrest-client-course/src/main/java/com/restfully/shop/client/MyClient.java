@@ -32,7 +32,7 @@ public class MyClient {
 					  + "<country>USA</country>"
 					  + "</customer>";
 			Response response = client.target(
-					  "http://localhost:8080/services/customers")
+					  "http://localhost:8080/wsrest-course/services/customers")
 					  .request().post(Entity.xml(xml));
 			if (response.getStatus() != 201) {
 				throw new RuntimeException(

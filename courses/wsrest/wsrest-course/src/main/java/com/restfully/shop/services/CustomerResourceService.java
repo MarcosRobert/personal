@@ -20,9 +20,12 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 
 public class CustomerResourceService implements CustomerResource {
@@ -30,28 +33,19 @@ private Map<Integer, Customer> customerDB = new ConcurrentHashMap<Integer, Custo
 private AtomicInteger idCounter = new AtomicInteger();
 
 public CustomerResourceService(){
-	Customer customer = new Customer();
-	customer.setCity("Oaxaca");
-	customer.setCountry("Mx");
-	customer.setFirstName("Roberto");
-	customer.setId(idCounter.incrementAndGet());
-	customer.setLastName("Lopez");
-	customer.setState("State");
-	customer.setStreet("Street");
-	customer.setZip("69709");
-	customerDB.put(customer.getId(), customer);
 }
-@Override
+
+	@Override
 	public Response createCustomer(InputStream is) {
 		Customer customer = readCustomer(is);
 		customer.setId(idCounter.incrementAndGet());
 		customerDB.put(customer.getId(), customer);
 		System.out.println("Created customer " + customer.getId());
-		return Response.created(URI.create("/customers/"
-				  + customer.getId())).build();
+		return Response.created(URI.create("/customers/" + customer.getId())).build();
 	}
 
 
+@Override
 	public StreamingOutput getCustomer(int id) {
 		final Customer customer = customerDB.get(id);
 		if (customer == null) {
@@ -66,9 +60,9 @@ public CustomerResourceService(){
 			}
 		};
 	}
-
-	public void updateCustomer(@PathParam("id") int id,
-			  InputStream is) {
+	
+	@Override
+	public void updateCustomer(int id, InputStream is) {
 		Customer update = readCustomer(is);
 		Customer current = customerDB.get(id);
 		if (current == null) {
@@ -82,8 +76,7 @@ public CustomerResourceService(){
 		current.setCountry(update.getCountry());
 	}
 
-	protected void outputCustomer(OutputStream os, Customer cust)
-			  throws IOException {
+	protected void outputCustomer(OutputStream os, Customer cust) throws IOException {
 		PrintStream writer = new PrintStream(os);
 		writer.println("<customer id=\"" + cust.getId() + "\">");
 		writer.println(" <first-name>" + cust.getFirstName()
@@ -100,8 +93,7 @@ public CustomerResourceService(){
 
 	protected Customer readCustomer(InputStream is) {
 		try {
-			DocumentBuilder builder
-					  = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+			DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
 			Document doc = builder.parse(is);
 			Element root = doc.getDocumentElement();
 			Customer cust = new Customer();
@@ -129,9 +121,16 @@ public CustomerResourceService(){
 				}
 			}
 			return cust;
-		} catch (Exception e) {
-			throw new WebApplicationException(e,
-					  Response.Status.BAD_REQUEST);
+		} catch (ParserConfigurationException e) {
+			throw new WebApplicationException(e, Response.Status.BAD_REQUEST);
+		} catch (SAXException e) {
+			throw new WebApplicationException(e, Response.Status.BAD_REQUEST);
+		} catch (IOException e) {
+			throw new WebApplicationException(e, Response.Status.BAD_REQUEST);
+		} catch (NumberFormatException e) {
+			throw new WebApplicationException(e, Response.Status.BAD_REQUEST);
+		} catch (DOMException e) {
+			throw new WebApplicationException(e, Response.Status.BAD_REQUEST);
 		}
 	}
 
